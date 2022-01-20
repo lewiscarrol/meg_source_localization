@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+
+###At this script we create stc with the results of the LMEM for each label. Labels from HCP (Glasser) parcelations 
+
+## Name of labels can find : https://static-content.springer.com/esm/art%3A10.1038%2Fnature18933/MediaObjects/41586_2016_BFnature18933_MOESM330_ESM.pdf
+
 """
 Created on Fri Dec 24 10:30:22 2021
 
