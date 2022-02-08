@@ -1,0 +1,78 @@
+import mne
+import mne
+import os.path as op
+import os
+import matplotlib
+from matplotlib import pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy import stats
+import copy
+import statsmodels.stats.multitest as mul
+
+
+os.environ['SUBJECTS_DIR'] = '/net/server/data/Archive/prob_learn/freesurfer'
+subjects_dir = '/net/server/data/Archive/prob_learn/freesurfer'
+label_list= mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1")
+label_list[0]
+label_list.pop(0)
+rh_list = mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1", hemi ="rh") 
+lh_list = mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1", hemi = "lh")
+
+
+subjects = pd.read_csv('/home/pultsinak/Рабочий стол/subj_list.csv')['subj_list'].tolist()
+subjects.remove('P062') 
+subjects.remove('P052') 
+subjects.remove("P032")
+subjects.remove('P045') 
+
+df = pd.read_csv('/home/pultsinak/Загрузки/df_lmem_label.csv', sep = ",")
+df_tt = pd.read_csv('/net/server/data/Archive/prob_learn/pultsinak/label_stc/Lmem_results_from_R/tukey_trial_type.csv', sep = ";")
+df_fc = pd.read_csv('/net/server/data/Archive/prob_learn/pultsinak/label_stc/Lmem_results_from_R/tukey_feedback.csv', sep = ";")
+
+#df = pd.read_csv('/Users/kristina/Documents/stc/lmem_label/lmem_sources/exp.csv')
+df_tt = df_tt.drop(df.columns[0], axis = 1)
+labels= pd.DataFrame(df.label_short.tolist())
+
+src = mne.setup_source_space(subject = "fsaverage", spacing='ico5', add_dist=False)
+stc_test = mne.read_source_estimate('/net/server/data/Archive/prob_learn/pultsinak/sources_sLoreta/beta_16_30/morphed_stc_epo_var2/P001_run2_norisk_fb_cur_negative_fsaverage/0', 'fsaverage').crop(tmin= -0.700, tmax= 2.500)
+stc_test.resample(10)
+
+def full_fdr(p_val_n):
+    s = p_val_n.shape
+    #print(p_val_n.shape)
+    temp = copy.deepcopy(p_val_n)
+    pval = np.ravel(temp)
+    _, pval_fdr = mul.fdrcorrection(pval)
+    pval_fdr_shape = pval_fdr.reshape(s)
+    return pval_fdr_shape
+
+def space_fdr(p_val_n):
+    #print(p_val_n.shape)
+    temp = copy.deepcopy(p_val_n)
+    for i in range(temp.shape[1]):
+        _, temp[:,i] = mul.fdrcorrection(p_val_n[:,i])
+    return temp
+
+
+data = []
+for label in label_list:
+    pval_s = df.loc[df['label_short'] == label.name] 
+    pval_trial_type = pval_s['feedback_cur'].tolist()
+    data.append(pval_trial_type)
+data = np.array(data)
+data_space_fdr = space_fdr(data)
+data_full_fdr = full_fdr(data)
+
+nofdr_stc = mne.labels_to_stc(label_list, data, tmin = stc_test.tmin, tstep = stc_test.tstep, src=src)
+nofdr_stc.save ('/net/server/data/Archive/prob_learn/pultsinak/label_stc/label_stc_with_LMEM/nofdr_feedback_cur')
+
+full_fdr_stc = mne.labels_to_stc(label_list, data_full_fdr, tmin = stc_test.tmin, tstep = stc_test.tstep, src=src)
+full_fdr_stc.save ('/net/server/data/Archive/prob_learn/pultsinak/label_stc/label_stc_with_LMEM/full_fdr_feedback_cur')
+
+space_fdr_stc = mne.labels_to_stc(label_list, data_space_fdr, tmin = stc_test.tmin, tstep = stc_test.tstep, src=src)
+space_fdr_stc.save ('/net/server/data/Archive/prob_learn/pultsinak/label_stc/label_stc_with_LMEM/space_fdr_feedback_cur')
+
+#stc_ff = mne.read_source_estimate('/net/server/data/Archive/prob_learn/pultsinak/label_stc/label_stc_with_LMEM/feedback_cur_stc-lh.stc')
+#stc_ff.subject = "fsaverage"
+#stc_ff.plot(hemi = "both")
