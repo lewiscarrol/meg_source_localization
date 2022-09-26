@@ -8,16 +8,15 @@ import os
 import os.path as op
 import numpy as np
 import pandas as pd
-from functions import make_freq_stc, make_stc_epochs_from_freq_epochs, make_stc_epochs_from_freq_epochs_var2
+
 
 
 L_freq = 16
 H_freq = 31
 f_step = 2
 
-#time_bandwidth = 4 #(by default = 4)
-# if delta (1 - 4 Hz) 
-#n_cycles = np.array([1, 1, 1, 2]) # уточнить
+time_bandwidth = 4 #(by default = 4)
+
 
 
 period_start = -1.750
